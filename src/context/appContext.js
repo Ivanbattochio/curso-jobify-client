@@ -12,6 +12,9 @@ import {
 	LOGIN_USER_SUCCESS,
 	TOGGLE_SIDEBAR,
 	LOGOUT_USER,
+	UPDATE_USER_BEGIN,
+	UPDATE_USER_ERROR,
+	UPDATE_USER_SUCCESS,
 } from "./actions"
 
 const user = localStorage.getItem("user")
@@ -41,7 +44,7 @@ const AppProvider = ({ children }) => {
 
 	authFetch.interceptors.request.use(
 		(config) => {
-			//config.headers.common["Authorization"] = `Bearer ${state.token}`
+			config.headers.common["Authorization"] = `Bearer ${state.token}`
 			return config
 		},
 		(error) => {
@@ -134,16 +137,27 @@ const AppProvider = ({ children }) => {
 	}
 
 	const updateUser = async (currentUser) => {
+		dispatch({ type: UPDATE_USER_BEGIN })
 		console.log(state.token, currentUser)
 		try {
 			const { data } = await authFetch.patch(
 				"/auth/updateUser",
 				currentUser
 			)
-			console.log(data)
+			const { user, token, location } = data
+
+			dispatch({
+				type: UPDATE_USER_SUCCESS,
+				payload: { user, location, token },
+			})
+			addUserToLocalStorage({ user, location, token })
 		} catch (error) {
-			//console.log(error)
+			dispatch({
+				type: UPDATE_USER_ERROR,
+				payload: error.response.data.msg,
+			})
 		}
+		clearAlert()
 	}
 
 	return (
